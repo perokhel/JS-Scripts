@@ -1,48 +1,19 @@
 (function processStudentRecords() {
-  createControlPanel();
-
-  function createControlPanel() {
-    const controlPanel = document.createElement("nav");
-    addStylesToNavbar(controlPanel);
-    createButton("Send Records", controlPanel, sendRecordsToAPI);
-    createButton("Send2", controlPanel, clickHandler);
-    createButton("Send3", controlPanel, clickHandler);
-    document.body.prepend(controlPanel);
-  }
-
-  function clickHandler(e) {
-    console.log(`${e.target.tagName}: ${e.target.innerText} clicked`);
-  }
-
-  function createButton(label, parent, evListener) {
-    let btn = document.createElement("button");
-    btn.innerHTML = label;
-    btn.addEventListener("click", evListener);
-    addStylesToButton(btn);
-    parent.appendChild(btn);
-  }
-
-  function addStylesToNavbar(navBar) {
-    navBar.style.display = "flex";
-    // navBar.style.overflow = "hidden";
-    // navBar.style.position = "fixed";
-    // navBar.style.top = "0";
-    // navBar.style.width = "100%";
-  }
-
-  function addStylesToButton(btn) {
-    btn.style.float = "left";
-    btn.style.display = "inline";
-    btn.style.fontSize = "1.5rem";
-    btn.style.padding = "20x";
-    btn.style.backgroundColor = "#79F6B2";
-  }
+  let sendButton = document.createElement("button");
+  sendButton.innerHTML = "Send";
+  sendButton.style.width = "100%";
+  sendButton.style.fontSize = "1.5rem";
+  sendButton.style.padding = "50x";
+  sendButton.style.backgroundColor = "#79F6B2";
+  sendButton.addEventListener("click", sendRecordsToAPI);
+  document.body.prepend(sendButton);
 
   function extractStudentRecords() {
     let tableDiv = document.querySelector("div.a3s.aiL");
-    let tableElements = tableDiv
-      ? Array.from(tableDiv.querySelectorAll("table > colgroup ~ tbody"))
-      : Array.from(document.querySelectorAll("colgroup ~ tbody"));
+    let selector = tableDiv
+      ? "div.a3s.aiL colgroup ~ tbody"
+      : "colgroup ~ tbody";
+    let tableElements = Array.from(document.querySelectorAll(selector));
 
     let tableRows = [];
 
