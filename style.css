@@ -1,0 +1,14 @@
+.control {
+	border: 2px solid black;
+	border-radius: 5px;
+	background-color: #f3f3f1;
+	border-color: #2196f3;
+	color: dodgerblue;
+	padding: 14px 28px;
+	font-size: 16px;
+}
+
+.control:hover {
+	background: #2196f3;
+	color: white;
+}
