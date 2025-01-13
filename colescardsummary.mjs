@@ -1,6 +1,44 @@
 const cssToInject =
 	".control {border: 2px solid black; border-radius: 5px;background-color: #f3f3f1;border-color: #2196f3;color: dodgerblue;padding: 14px 28px;font-size: 16px;}.control:hover {background: #2196f3;color: white;}";
 
+(function initialize() {
+	createUI();
+})();
+
+function createUI() {
+	createControlPanel();
+	injectCSS(cssToInject);
+
+	function createControlPanel() {
+		const controlPanel = document.createElement("nav");
+		styleNavbar(controlPanel);
+		createButton("Send Transactions", controlPanel, sendTransactions);
+		createButton("print summary", controlPanel, printSummary);
+		createButton("print Transactions", controlPanel, printTransactions);
+		createButton("transactions Total", controlPanel, transactionsTotal);
+		document.body.prepend(controlPanel);
+	}
+
+	function createButton(label, parent, evListener) {
+		let btn = document.createElement("button");
+		btn.innerHTML = label;
+		btn.addEventListener("click", evListener);
+		styleButton(btn);
+		parent.appendChild(btn);
+	}
+
+	function styleNavbar(navBar) {
+		navBar.style.display = "flex";
+		navBar.classList.add("control-bar");
+	}
+
+	function styleButton(btn) {
+		btn.classList.add("control");
+		btn.style.float = "left";
+		btn.style.display = "inline";
+	}
+}
+
 function injectCSS(css) {
 	let el = document.createElement("style");
 	el.type = "text/css";
@@ -9,66 +47,70 @@ function injectCSS(css) {
 	return el;
 }
 
-(function processStudentRecords() {
-	createControlPanel();
-	injectCSS(cssToInject);
+function sendTransactions() {
+	const cardHolder = getCardHolderName();
+	const transactions = getTransactions();
+	console.info(`Sending transactions for ${cardHolder}`);
+	console.info(transactions);
+	sendData(cardHolder, transactions);
+}
 
-	function createControlPanel() {
-		const controlPanel = document.createElement("nav");
-		addStylesToNavbar(controlPanel);
-		createButton("Send Transactions", controlPanel, sendTransactions);
-		createButton("print summary", controlPanel, printSummary);
-		createButton("print Transactions", controlPanel, printTransactions);
-		createButton("transactions Total", controlPanel, transactionsTotal);
-		document.body.prepend(controlPanel);
-	}
+function printSummary() {
+	console.info(getColesFinancialSummary());
+}
 
-	function sendTransactions() {
-		sendData(getTransactions());
-	}
+function printTransactions() {
+	console.info(getTransactions());
+}
 
-	function printSummary() {
-		console.log(getColesFinancialSummary());
-	}
+function transactionsTotal() {
+	const transactions = getPendingTransactions();
+	const total = transactions.reduce(
+		(sum, transaction) => sum + transaction.amount,
+		0
+	);
+	console.info(`Sum of all transactions is: ${total}`);
+}
 
-	function printTransactions() {
-		console.log(getPendingTransactions());
-	}
+async function sendData(username, transactions) {
+	let apiUrl = "http://localhost:3100/api";
+	let postOptions = {
+		method: "POST", // *GET, POST, PUT, DELETE, etc.
+		cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
+		headers: {
+			"Content-Type": "application/json",
+			// 'Content-Type': 'application/x-www-form-urlencoded',
+		},
+		redirect: "follow", // manual, *follow, error
+		referrerPolicy: "no-referrer", // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
+		body: JSON.stringify({ username, transactions }), // body data type must match "Content-Type" header
+	};
 
-	function transactionsTotal() {
-		const transactions = getPendingTransactions();
-		const total = transactions.reduce(
-			(sum, transaction) => sum + transaction.amount,
-			0
-		);
-		console.log(`Sum of all transactions is: ${total}`);
+	try {
+		let response = await fetch(apiUrl, postOptions);
+		if (!response.ok) {
+			throw new Error(`Response status: ${response.status}`);
+		}
+		let serverMessage = await response.json();
+		console.info(serverMessage);
+	} catch (error) {
+		console.info(error.message);
 	}
+}
 
-	function createButton(label, parent, evListener) {
-		let btn = document.createElement("button");
-		btn.innerHTML = label;
-		btn.addEventListener("click", evListener);
-		addStylesToButton(btn);
-		parent.appendChild(btn);
-	}
-
-	function addStylesToNavbar(navBar) {
-		navBar.style.display = "flex";
-		navBar.classList.add("control-bar");
-	}
-
-	function addStylesToButton(btn) {
-		btn.classList.add("control");
-		btn.style.float = "left";
-		btn.style.display = "inline";
-	}
-})();
+function getCardHolderName() {
+	const msgPanel = document.querySelector(".action-msg-panel");
+	const cardHolderName = msgPanel.querySelector("a").innerText;
+	return cardHolderName;
+}
 
 function getColesFinancialSummary() {
 	const availableCreditField = document.getElementById(
 		"availCreditLimitBalanceDetail"
 	);
-	const creditLimitField = document.getElementById("creditLimitBalanceDetail");
+	const creditLimitField = document.getElementById(
+		"creditLimitBalanceDetail"
+	);
 	const cardBalanceField = document.getElementById("cardBalanceLink");
 	const installmentBalanceField = document
 		.getElementById("totalRemainingBalance")
@@ -121,44 +163,21 @@ function getPendingTransactions() {
 
 function getTransactions() {
 	let transactions, transactionsArray, transMap;
-	transactions = document.querySelectorAll(".custom-data-grid-row-identifier");
+	transactions = document.querySelectorAll(
+		".custom-data-grid-row-identifier"
+	);
 	transactionsArray = Array.from(transactions);
 	transMap = transactionsArray.map((trans) => {
 		let dataPivot = trans.attributes["data-pivot"].value;
 		let date = trans.querySelector(".ui-float-left").innerText;
 		let description = trans.querySelector(".cbol-trans-desc").innerText;
-		let amount = trans.querySelector(".format-amount-holder").innerText;
+		let amount = extractNumber(
+			trans.querySelector(".format-amount-holder").innerText
+		);
 		return { dataPivot, date, description, amount };
 	});
 
 	return transMap;
-}
-
-async function sendData(transactions) {
-	let apiUrl = "http://localhost:3100/api";
-	let apiUrlCyclic = "https://gardenia.cyclic.app/api";
-	let postOptions = {
-		method: "POST", // *GET, POST, PUT, DELETE, etc.
-		cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
-		headers: {
-			"Content-Type": "application/json",
-			// 'Content-Type': 'application/x-www-form-urlencoded',
-		},
-		redirect: "follow", // manual, *follow, error
-		referrerPolicy: "no-referrer", // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-		body: JSON.stringify(transactions), // body data type must match "Content-Type" header
-	};
-
-	try {
-		const response = await fetch(apiUrl, postOptions);
-		if (!response.ok) {
-			throw new Error(`Response status: ${response.status}`);
-		}
-		const JsondData = await response.json();
-		console.log(JsondData);
-	} catch (error) {
-		console.log(error.message);
-	}
 }
 
 function getTransactionsTotal(transactions) {
@@ -172,7 +191,23 @@ function getTransactionsTotal(transactions) {
 }
 
 function extractNumber(str) {
+	if (!(typeof str === "string")) return str;
 	const sanitizedStr = str.replace(/[^\d\-\.]/g, "");
 	const number = parseFloat(sanitizedStr);
 	return number;
+}
+
+function mergeTransactions(existingTransactions, newTransactions) {
+	// Create a Set to efficiently check for duplicate dataPivot values
+	const dataPivotSet = new Set(
+		existingTransactions.map((obj) => obj.dataPivot)
+	);
+
+	// Filter the newTransactions to include only objects with unique dataPivot values
+	const uniqueNewTransactions = newTransactions.filter(
+		(obj) => !dataPivotSet.has(obj.dataPivot)
+	);
+
+	// Add the unique new transactions to the existing transactions
+	return [...existingTransactions, ...uniqueNewTransactions];
 }
