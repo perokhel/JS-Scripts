@@ -73,7 +73,7 @@ function transactionsTotal() {
 }
 
 async function sendData(username, transactions) {
-	let apiUrl = "http://localhost:3100/api";
+	let apiUrl = "http://localhost:3100/api/cardtransactions";
 	let postOptions = {
 		method: "POST", // *GET, POST, PUT, DELETE, etc.
 		cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
